@@ -1,0 +1,69 @@
+# PROCESAMIENTO EN TIEMPO REAL
+import cv2
+import numpy as np
+
+# Modos de ejecucion
+# vc = 0 --> 48  # Captura de video
+# fd = 1 --> 49  # Filtro desenfoque
+# fe = 2 --> 50  # Filtro detector de esquinas
+# fb = 3 --> 51  # Filtro de Bordes
+
+# Parámetros para detector de esquinas
+esquinas_param = dict(
+    maxCorners=500,  # Máximo número de esquinas a detectar
+    qualityLevel=0.5,  # Umbral mínimo para la detección de esquinas
+    minDistance=15,  # Distancia entre píxeles
+    blockSize=9  # Área de píxeles
+)
+
+# Estado inicial
+mood = 48
+
+# Creamos la Video Captura
+cap = cv2.VideoCapture(0)
+
+# Creamos un ciclo para ejecutar nuestros Frames
+while True:
+    # Leemos los fotogramas
+    ret, frame = cap.read()
+
+    if not ret:
+        break  # Salimos si no se puede capturar
+    
+    # Inicializamos esquinas como None por defecto
+    esquinas = None
+
+    # Decidimos el mood
+    if mood == 48:  # Normal
+        resultado = frame
+
+    elif mood == 49:  # Desenfoque
+        resultado = cv2.blur(frame, (13, 13))
+
+    elif mood == 51:  # Bordes
+        resultado = cv2.Canny(frame, 135, 150)  # Umbral superior e inferior
+
+    elif mood == 50:  # Esquinas
+        resultado = frame
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        esquinas = cv2.goodFeaturesToTrack(gray, **esquinas_param)
+    
+    # Dibujamos las esquinas si existen
+    if esquinas is not None:
+        for x, y in np.float32(esquinas).reshape(-1, 2):
+            x, y = int(x), int(y)
+            cv2.circle(resultado, (x, y), 5, (255, 0, 0), 1)
+
+    # Mostramos los Frames
+    cv2.imshow("VIDEO CAPTURA", resultado)
+
+    # Lectura de teclado
+    t = cv2.waitKey(1) & 0xFF
+    if t == 27:  # Tecla ESC para salir
+        break
+    elif t in [48, 49, 50, 51]:  # Actualizamos mood solo para teclas válidas
+        mood = t
+
+# Liberamos la VideoCaptura
+cap.release()
+cv2.destroyAllWindows()
